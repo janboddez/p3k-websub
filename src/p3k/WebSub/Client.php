@@ -110,7 +110,7 @@ class Client {
             $type = $body['type'] = 'atom';
           }
 
-          // Look for atom link elements in the feed        
+          // Look for atom link elements in the feed
           foreach($xpath->query('/atom:feed/atom:link[@href]') as $link) {
             $rel = $link->getAttribute('rel');
             $url = $link->getAttribute('href');
@@ -192,6 +192,9 @@ class Client {
     if(isset($options['secret'])) {
       $params['hub.secret'] = $options['secret'];
     }
+    if(isset($options['verify'])) { // Compatibility with Automattic's PuSHPress.
+      $params['hub.verify'] = $options['verify'];
+    }
     $response = $this->http->post($hub, http_build_query($params));
 
     // TODO: Check for HTTP 307/308 and subscribe at the new location
@@ -199,12 +202,15 @@ class Client {
     return $response;
   }
 
-  public function unsubscribe($hub, $topic, $callback) {
+  public function unsubscribe($hub, $topic, $callback, $options=[]) {
     $params = [
       'hub.mode' => 'unsubscribe',
       'hub.topic' => $topic,
       'hub.callback' => $callback,
     ];
+    if(isset($options['verify'])) { // Compatibility with Automattic's PuSHPress.
+      $params['hub.verify'] = $options['verify'];
+    }
     $response = $this->http->post($hub, http_build_query($params));
 
     // TODO: Check for HTTP 307/308 and unsubscribe at the new location
@@ -213,7 +219,7 @@ class Client {
   }
 
   public static function verify_signature($body, $signature_header, $secret) {
-    if($signature_header && is_string($signature_header) 
+    if($signature_header && is_string($signature_header)
       && preg_match('/(sha(?:1|256|384|512))=(.+)/', $signature_header, $match)) {
       $alg = $match[1];
       $sig = $match[2];
